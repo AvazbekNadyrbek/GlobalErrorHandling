@@ -9,9 +9,9 @@ import SwiftUI
 
 struct ContentView: View {
     
-    //@Enviroment(\.showError) private var showError
-    
     @Environment(\.showError) private var showError
+    @State private var showingSheet = false
+    @State private var showingPopover = false
     
     var body: some View {
         VStack {
@@ -25,6 +25,87 @@ struct ContentView: View {
                 DetailScreen()
             }
             
+        }
+        .navigationTitle("ContentView")
+        .toolbar {
+            // Multiple toolbar items - modern approach
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showingPopover = true
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .popover(isPresented: $showingPopover) {
+                    VStack(spacing: 16) {
+                        Text("App Information")
+                            .font(.headline)
+                        Text("This demonstrates global error handling")
+                            .multilineTextAlignment(.center)
+                        Button("Dismiss") {
+                            showingPopover = false
+                        }
+                    }
+                    .padding()
+                    .presentationCompactAdaptation(.sheet)
+                }
+                
+                Button {
+                    showingSheet = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                }
+            }
+            
+            // Leading toolbar item
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showError(SampleError.operationFailed, "Toolbar Error Demo")
+                } label: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+            }
+            
+            // Principal (center) toolbar item - great for important actions
+            ToolbarItem(placement: .principal) {
+                Button {
+                    showError(SampleError.operationFailed, "Center action triggered")
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.clockwise")
+                        Text("Refresh")
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                }
+            }
+        }
+        .sheet(isPresented: $showingSheet) {
+            NavigationStack {
+                VStack(spacing: 20) {
+                    Text("Sheet Content")
+                        .font(.largeTitle)
+                    
+                    Button {
+                        showError(SampleError.operationFailed, "Sheet Error Demo")
+                    } label: {
+                        Text("Trigger Error from Sheet")
+                    }
+                    
+                    Spacer()
+                }
+                .navigationTitle("Sheet View")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") {
+                            showingSheet = false
+                        }
+                    }
+                }
+                .padding()
+            }
+            .presentationDetents([.medium, .large])
         }
         .padding()
     }
@@ -40,9 +121,15 @@ struct ContentViewContainer: View {
             ContentView()
         }
         .environment(\.showError, ShowErrorAction(action: showError))
-        .sheet(item: $errorWrapper) { errorWrapper in
-            ErrorView(errorWrapper: errorWrapper)
-        }
+        .overlay(alignment: .bottom) {
+            errorWrapper != nil ? ErrorView(errorWrapper: $errorWrapper) : nil
+        }        /*
+         .sheet(item: $errorWrapper) { errorWrapper in
+             ErrorView(errorWrapper: errorWrapper)
+         }
+         */
+        
+        
     }
     
     private func showError( error: Error, guidence: String) {
