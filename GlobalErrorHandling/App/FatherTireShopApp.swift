@@ -15,13 +15,13 @@ struct FatherTireShopApp: App {
     // MARK: - State
     
     @StateObject private var authViewModel: AuthViewModel
-    
+    @StateObject private var router: AppRouter
     // MARK: - Initialization
     
     init() {
-        // Создаём клиент один раз и передаём в AuthViewModel
         let client = ClientFactory.createClient()
         _authViewModel = StateObject(wrappedValue: AuthViewModel(client: client))
+        _router = StateObject(wrappedValue: AppRouter()) // <--- добавь эту строку
     }
     
     // MARK: - Body
@@ -30,6 +30,7 @@ struct FatherTireShopApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(authViewModel)
+                .environmentObject(router)
                 .modifier(ErrorModifier()) // 👈 Глобальный обработчик ошибок
         }
     }

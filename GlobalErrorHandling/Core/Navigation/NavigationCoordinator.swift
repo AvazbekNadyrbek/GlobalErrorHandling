@@ -68,7 +68,11 @@ struct NavigationCoordinator: View {
             
         case .settings:
             SettingsView()
+            
+        case .admin:
+            AdminDashboardView()
         }
+        
     }
 }
 
@@ -87,6 +91,7 @@ extension Route: Identifiable {
         case .tireFilter: return "tireFilter"
         case .profile: return "profile"
         case .settings: return "settings"
+        case .admin: return "admin"
         }
     }
 }

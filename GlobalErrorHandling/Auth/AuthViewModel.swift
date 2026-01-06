@@ -19,6 +19,7 @@ final class AuthViewModel: ObservableObject {
     /// Состояние авторизации
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
+    @Published var role: String? = nil
     
     // MARK: - Private Properties
     
@@ -36,6 +37,7 @@ final class AuthViewModel: ObservableObject {
         }
         
         checkLoginStatus()
+        loadSavedRole()
         setupUnauthorizedListener()
     }
     
@@ -49,6 +51,7 @@ final class AuthViewModel: ObservableObject {
     /// Проверка: есть ли сохранённый токен?
     func checkLoginStatus() {
         isAuthenticated = AuthService.shared.isAuthenticated
+        loadSavedRole()
     }
     
     /// ВХОД (Login)
@@ -73,7 +76,9 @@ final class AuthViewModel: ObservableObject {
                 switch okResponse.body {
                 case .json(let authResponse):
                     if let token = authResponse.token {
-                        AuthService.shared.saveToken(token)
+                        let userRole = authResponse.role?.rawValue ?? "CLIENT"
+                        AuthService.shared.saveCredentials(token: token, role: userRole)
+                        role = userRole
                         isAuthenticated = true
                         print("✅ Успешный вход! Токен сохранен.")
                     } else {
@@ -117,8 +122,8 @@ final class AuthViewModel: ObservableObject {
                 // С produces = "application/json" будет .json case
                 switch okResponse.body {
                 case .json(let authResponse):
-                    if let token = authResponse.token {
-                        AuthService.shared.saveToken(token)
+                    if let token = authResponse.token, let role = authResponse.role {
+                        AuthService.shared.saveCredentials(token: token, role: role.rawValue)
                         isAuthenticated = true
                         print("✅ Успешная регистрация! Токен сохранен.")
                     } else {
@@ -144,6 +149,7 @@ final class AuthViewModel: ObservableObject {
     /// ВЫХОД (Logout)
     func logout() {
         AuthService.shared.logout()
+        self.role = nil
         isAuthenticated = false
         print("🔓 Выход выполнен")
     }
@@ -159,6 +165,11 @@ final class AuthViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+    
+    /// Загружает сохранённую из UserDefaults роль пользователя
+    func loadSavedRole() {
+        role = UserDefaults.standard.string(forKey: "user_role")
     }
     
     /// Извлекает сообщение об ошибке из тела ответа

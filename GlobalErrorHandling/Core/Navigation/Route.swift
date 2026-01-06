@@ -25,6 +25,7 @@ enum Route: Hashable {
     // MARK: - Profile
     case profile
     case settings
+    case admin
 }
 
 // MARK: - Route Metadata
@@ -51,6 +52,8 @@ extension Route {
             return "Профиль"
         case .settings:
             return "Настройки"
+        case .admin:
+            return "Админка"
         }
     }
 }

@@ -9,45 +9,49 @@ import SwiftUI
 
 struct MainTabView: View {
     
-    @EnvironmentObject var router: AppRouter
+    // Нам не нужен здесь Router, если мы используем NavigationStack внутри табов
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var selectedTab = 0
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 📋 Таб 1: Услуги
+            
+            // 1. Услуги (NavigationCoordinator уже содержит NavigationStack)
             NavigationCoordinator()
                 .tabItem {
                     Label("Услуги", systemImage: "wrench.and.screwdriver")
                 }
                 .tag(0)
             
-            // 📅 Таб 2: Мои Записи
-            BookingListView()
-                .tabItem {
-                    Label("Записи", systemImage: "calendar")
-                }
-                .tag(1)
+            // 2. Мои записи
+            // Оберни в NavigationStack, если внутри BookingListView его нет
+            NavigationStack {
+                BookingListView()
+            }
+            .tabItem {
+                Label("Записи", systemImage: "calendar")
+            }
+            .tag(1)
             
-            // 🚗 Таб 3: Шины
-            TireListView()
-                .tabItem {
-                    Label("Шины", systemImage: "car.fill")
-                }
-                .tag(2)
+            // 3. Админка (ТОЛЬКО ДЛЯ ADMIN)
+            if authViewModel.role == "ADMIN" {
+                // AdminDashboardView уже содержит NavigationStack внутри себя?
+                // Если да - ок. Если нет - добавь сюда.
+                AdminDashboardView()
+                    .tabItem {
+                        Label("Мастерская", systemImage: "chart.bar.doc.horizontal")
+                    }
+                    .tag(2)
+            }
             
-            // 👤 Таб 4: Профиль
-            ProfileView()
-                .tabItem {
-                    Label("Профиль", systemImage: "person.circle")
-                }
-                .tag(3)
+            // 4. Профиль
+            NavigationStack {
+                ProfileView()
+            }
+            .tabItem {
+                Label("Профиль", systemImage: "person.circle")
+            }
+            .tag(3)
         }
     }
-}
-
-#Preview {
-    MainTabView()
-        .environmentObject(AppRouter())
-        .environmentObject(AuthViewModel())
 }
