@@ -46,7 +46,7 @@ class BookingListViewModel: ObservableObject {
                         // Сортируем по ID (последние добавленные = больший ID)
                         let sortedBookings = appointments
                             .map { AppointmentItem(from: $0) }
-                            .sorted { $0.id > $1.id }  // 👈 От большего к меньшему
+                            .sorted { $0.startTime > $1.startTime } 
                         
                         self.bookings = sortedBookings
                     }

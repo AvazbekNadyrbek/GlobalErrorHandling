@@ -11,6 +11,57 @@
 }
 ],
 "paths": {
+"/api/v1/news": {
+"get": {
+"tags": [
+"news-controller"
+],
+"operationId": "getNews",
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/NewsEntity"
+}
+}
+}
+}
+}
+}
+},
+"post": {
+"tags": [
+"news-controller"
+],
+"operationId": "createNews",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/NewsEntity"
+}
+}
+},
+"required": true
+},
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/NewsEntity"
+}
+}
+}
+}
+}
+}
+},
 "/api/v1/inventory": {
 "get": {
 "tags": [
@@ -21,7 +72,7 @@
 "200": {
 "description": "OK",
 "content": {
-"*/*": {
+"application/json": {
 "schema": {
 "type": "array",
 "items": {
@@ -52,7 +103,7 @@
 "200": {
 "description": "OK",
 "content": {
-"*/*": {
+"application/json": {
 "schema": {
 "$ref": "#/components/schemas/TireResponse"
 }
@@ -82,7 +133,7 @@
 "200": {
 "description": "OK",
 "content": {
-"*/*": {
+"application/json": {
 "schema": {
 "type": "integer",
 "format": "int64"
@@ -207,6 +258,29 @@
 }
 }
 },
+"/api/v1/inventory/orders/admin": {
+"get": {
+"tags": [
+"inventory-controller"
+],
+"operationId": "getAdminOrders",
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/AdminOrderResponse"
+}
+}
+}
+}
+}
+}
+}
+},
 "/api/v1/booking/slots": {
 "get": {
 "tags": [
@@ -281,9 +355,18 @@
 "operationId": "getAdminAppointments",
 "parameters": [
 {
-"name": "date",
+"name": "startDate",
 "in": "query",
 "required": true,
+"schema": {
+"type": "string",
+"format": "date"
+}
+},
+{
+"name": "endDate",
+"in": "query",
+"required": false,
 "schema": {
 "type": "string",
 "format": "date"
@@ -310,6 +393,28 @@
 },
 "components": {
 "schemas": {
+"NewsEntity": {
+"type": "object",
+"properties": {
+"id": {
+"type": "integer",
+"format": "int64"
+},
+"title": {
+"type": "string"
+},
+"content": {
+"type": "string"
+},
+"imageUrl": {
+"type": "string"
+},
+"createdAt": {
+"type": "string",
+"format": "date-time"
+}
+}
+},
 "CreateTireRequest": {
 "required": [
 "brand",
@@ -501,6 +606,43 @@
 },
 "description": {
 "type": "string"
+}
+}
+},
+"AdminOrderResponse": {
+"type": "object",
+"properties": {
+"id": {
+"type": "integer",
+"format": "int64"
+},
+"clientName": {
+"type": "string"
+},
+"clientPhone": {
+"type": "string"
+},
+"totalPrice": {
+"type": "number"
+},
+"status": {
+"type": "string",
+"enum": [
+"NEW",
+"PAID",
+"COMPLETED",
+"CANCELLED"
+]
+},
+"createdAt": {
+"type": "string",
+"format": "date-time"
+},
+"itemsSummary": {
+"type": "array",
+"items": {
+"type": "string"
+}
 }
 }
 },

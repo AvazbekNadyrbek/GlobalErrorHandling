@@ -1,3 +1,4 @@
+
 //
 //  BookingView.swift
 //  GlobalErrorHandling
@@ -194,3 +195,5 @@ struct TimeSlotButton: View {
         }
     }
 }
+
+

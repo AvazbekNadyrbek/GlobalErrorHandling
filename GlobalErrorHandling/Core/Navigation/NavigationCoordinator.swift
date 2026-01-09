@@ -16,20 +16,25 @@ struct NavigationCoordinator: View {
     var body: some View {
         NavigationStack(path: $router.path) {
             // 🏠 Корневой экран - список услуг
-            ServiceView()
-                .navigationDestination(for: Route.self) { route in
-                    viewForRoute(route)
-                }
-                .sheet(item: $router.sheet) { route in
-                    NavigationStack {
+            VStack {
+                ServiceView()
+                    .navigationDestination(for: Route.self) { route in
                         viewForRoute(route)
                     }
-                }
-                .fullScreenCover(item: $router.fullScreenCover) { route in
-                    NavigationStack {
-                        viewForRoute(route)
+                    .sheet(item: $router.sheet) { route in
+                        NavigationStack {
+                            viewForRoute(route)
+                        }
                     }
-                }
+                    .fullScreenCover(item: $router.fullScreenCover) { route in
+                        NavigationStack {
+                            viewForRoute(route)
+                        }
+                    }
+                
+
+            }
+            
         }
     }
     
@@ -60,7 +65,7 @@ struct NavigationCoordinator: View {
             TireDetailView(tireId: id)
             
         case .tireFilter:
-            TireFilterView()
+            TireFilterView(viewModel: TireShopViewModel())
             
         // MARK: Profile
         case .profile:

@@ -7,144 +7,141 @@
 
 import SwiftUI
 
-/// Административная панель для просмотра и управления записями клиентов
-/// Позволяет фильтровать по дате и звонить клиентам напрямую
 struct AdminDashboardView: View {
     
     @StateObject private var viewModel = AdminViewModel()
-
-    // MARK: - Глобальная система обработки ошибок
     @Environment(\.showError) private var showError
+    @State private var showingCreateNews = false
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // MARK: - Date Picker Section
-                datePickerSection
-                
-                // MARK: - Content Section
-                contentSection
+        VStack(spacing: 0) {
+            // 1. ВЫБОР ДИАПАЗОНА
+            rangePickerSection
+            
+            // 2. СПИСОК
+            contentSection
+        }
+        .navigationTitle("Кабинет Отца 🛠️")
+        .background(Color(uiColor: .systemGroupedBackground))
+        .task {
+            // При старте грузим только сегодня
+            await viewModel.loadAppointments()
+        }
+        .toolbar {
+            // 👇 Кнопка добавления новости
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    showingCreateNews = true
+                }) {
+                    Image(systemName: "megaphone.fill") // Иконка громкоговорителя
+                        .foregroundColor(.blue)
+                }
             }
-            .navigationTitle("Кабинет Отца 🛠️")
-            .task {
-                await loadAppointmentsWithErrorHandling()
-            }
+        }
+        // 👇 Открытие экрана
+        .sheet(isPresented: $showingCreateNews) {
+            AdminNewsCreateView()
         }
     }
     
-    // MARK: - View Components
-    
-    /// Секция выбора даты
-    private var datePickerSection: some View {
-        DatePicker(
-            "Дата",
-            selection: $viewModel.selectedDate,
-            displayedComponents: .date
-        )
-        .datePickerStyle(.compact)
+    // Секция с двумя датами
+    private var rangePickerSection: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("Период:")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            
+            HStack {
+                // ОТ
+                VStack(alignment: .leading) {
+                    Text("C")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    DatePicker("", selection: $viewModel.startDate, displayedComponents: .date)
+                        .labelsHidden()
+                }
+                
+                Spacer()
+                Image(systemName: "arrow.right")
+                    .foregroundColor(.gray)
+                Spacer()
+                
+                // ДО
+                VStack(alignment: .leading) {
+                    Text("По")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    // Ограничиваем: Конец не может быть раньше начала
+                    DatePicker("", selection: $viewModel.endDate, in: viewModel.startDate..., displayedComponents: .date)
+                        .labelsHidden()
+                }
+            }
+        }
         .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(10)
+        .background(Color.white)
+        .cornerRadius(12)
         .padding(.horizontal)
         .padding(.bottom, 8)
-        .onChange(of: viewModel.selectedDate) {
-            // Новый синтаксис onChange - без параметров
-            Task {
-                await loadAppointmentsWithErrorHandling()
-            }
-        }
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        // Если даты меняются — грузим заново
+        .onChange(of: viewModel.startDate) { refresh() }
+        .onChange(of: viewModel.endDate) { refresh() }
     }
     
-    /// Основной контент в зависимости от состояния
+    private func refresh() {
+        Task { await viewModel.loadAppointments() }
+    }
+    
+    // Контент с секциями
     @ViewBuilder
     private var contentSection: some View {
         if viewModel.isLoading {
-            loadingView
-        } else if viewModel.appointments.isEmpty {
-            emptyStateView
+            ProgressView("Загрузка...")
+                .frame(maxHeight: .infinity)
+        } else if viewModel.sortedDays.isEmpty {
+            VStack(spacing: 16) {
+                Image(systemName: "calendar.badge.checkmark")
+                    .font(.system(size: 60))
+                    .foregroundColor(.gray)
+                Text("Нет записей в этот период")
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxHeight: .infinity)
         } else {
-            appointmentsList
-        }
-    }
-    
-    /// Индикатор загрузки
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-            Text("Загрузка расписания...")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    /// Пустое состояние (нет записей)
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "calendar.badge.exclamationmark")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-            
-            Text("На этот день записей нет")
-                .font(.title3)
-                .foregroundColor(.secondary)
-            
-            Text(formattedSelectedDate)
-                .font(.caption)
-                .foregroundColor(.secondary.opacity(0.7))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    /// Список записей
-    private var appointmentsList: some View {
-        List(viewModel.appointments, id: \.id) { appointment in
-            AppointmentCard(
-                appointment: appointment,
-                onCall: { phone in
-                    viewModel.callClient(phone: phone)
+            List {
+                // Пробегаем по дням (Секциям)
+                ForEach(viewModel.sortedDays, id: \.self) { day in
+                    Section(header: Text(formatSectionDate(day))) {
+                        // Достаем записи для конкретного дня
+                        if let dayAppointments = viewModel.groupedAppointments[day] {
+                            // Сортируем внутри дня по времени
+                            ForEach(dayAppointments.sorted { ($0.startTime ?? Date()) < ($1.startTime ?? Date()) }, id: \.id) { appointment in
+                                AppointmentCard(
+                                    appointment: appointment,
+                                    onCall: { viewModel.callClient(phone: $0) }
+                                )
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                .listRowBackground(Color.clear)
+                            }
+                        }
+                    }
                 }
-            )
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-            .listRowBackground(Color.clear)
-        }
-        .listStyle(.plain)
-        .refreshable {
-            await loadAppointmentsWithErrorHandling()
+            }
+            .listStyle(.plain)
+            .refreshable { await viewModel.loadAppointments() }
         }
     }
     
-    // MARK: - Helper Methods
-    
-    /// Загружает записи с глобальной обработкой ошибок через Environment
-    private func loadAppointmentsWithErrorHandling() async {
-        do {
-            try await viewModel.loadAppointments()
-        } catch let apiError as APIError {
-            // Используем глобальную систему обработки ошибок
-            // APIError уже содержит errorDescription и recoverySuggestion
-            showError(
-                apiError,
-                apiError.recoverySuggestion ?? "Попробуйте снова"
-            )
-        } catch {
-            // На случай других неожиданных ошибок
-            showError(
-                error,
-                "Произошла неожиданная ошибка"
-            )
-        }
-    }
-    
-    /// Форматированная выбранная дата для отображения
-    private var formattedSelectedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        formatter.locale = Locale.current
-        return formatter.string(from: viewModel.selectedDate)
+    // Красивая дата для заголовка (например: "15 Января, Среда")
+    private func formatSectionDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "d MMMM, EEEE" // День Месяц, ДеньНедели
+        f.locale = Locale(identifier: "ru_RU")
+        return f.string(from: date).capitalized
     }
 }
 

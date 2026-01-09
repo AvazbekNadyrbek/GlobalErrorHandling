@@ -9,22 +9,19 @@ import SwiftUI
 
 struct MainTabView: View {
     
-    // Нам не нужен здесь Router, если мы используем NavigationStack внутри табов
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var selectedTab = 0
     
     var body: some View {
         TabView(selection: $selectedTab) {
+            NavigationStack {
+                NavigationCoordinator()
+            }
+            .tabItem {
+                Label("Услуги", systemImage: "wrench.and.screwdriver")
+            }
+            .tag(0)
             
-            // 1. Услуги (NavigationCoordinator уже содержит NavigationStack)
-            NavigationCoordinator()
-                .tabItem {
-                    Label("Услуги", systemImage: "wrench.and.screwdriver")
-                }
-                .tag(0)
-            
-            // 2. Мои записи
-            // Оберни в NavigationStack, если внутри BookingListView его нет
             NavigationStack {
                 BookingListView()
             }
@@ -33,25 +30,40 @@ struct MainTabView: View {
             }
             .tag(1)
             
-            // 3. Админка (ТОЛЬКО ДЛЯ ADMIN)
             if authViewModel.role == "ADMIN" {
-                // AdminDashboardView уже содержит NavigationStack внутри себя?
-                // Если да - ок. Если нет - добавь сюда.
-                AdminDashboardView()
-                    .tabItem {
-                        Label("Мастерская", systemImage: "chart.bar.doc.horizontal")
-                    }
-                    .tag(2)
+                NavigationStack {
+                    AdminDashboardView()
+                }
+                .tabItem {
+                    Label("Мастерская", systemImage: "chart.bar.doc.horizontal")
+                }
+                .tag(2)
+                
+                AdminOrdersView()
+                        .tabItem {
+                            Label("Продажи", systemImage: "banknote")
+                        }
+                        .tag(3)
+            } else {
+                NavigationStack {
+                    ProfileView()
+                }
+                .tabItem {
+                    Label("Профиль", systemImage: "person.circle")
+                }
+                .tag(4)
+                
+                NavigationStack {
+                    TireListView()
+                }
+                .tabItem {
+                    Label("Магазин", systemImage: "cart")
+                }
+                .tag(5)
             }
             
-            // 4. Профиль
-            NavigationStack {
-                ProfileView()
-            }
-            .tabItem {
-                Label("Профиль", systemImage: "person.circle")
-            }
-            .tag(3)
+           
+            
         }
     }
 }

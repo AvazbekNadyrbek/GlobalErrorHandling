@@ -20,7 +20,24 @@ struct ServiceView: View {
     
     var body: some View {
         NavigationStack {
+            
             VStack(spacing: 0) {
+                List {
+                    Section {
+                        NewsCarouselView()
+                            .listRowInsets(EdgeInsets())
+                            .background(Color.clear)
+                    } header: {
+                        Text("Новости").font(.title2).bold()
+                    }
+                    Section {
+                        ForEach(viewModel.services, id: \.id) { service in
+                            ServiceRowView(service: service)
+                        }
+                    }
+                }
+                .listStyle(.grouped)
+
                 // Контент
                 Group {
                     if viewModel.isLoading && !hasLoadedOnce {
@@ -49,6 +66,8 @@ struct ServiceView: View {
                         }
                     }
                 }
+                
+                
             }
             .navigationTitle("Прайс-лист Отца")
             .toolbar {
